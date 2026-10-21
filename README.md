@@ -2,9 +2,9 @@
 
 **Every dropback is a race between the routes and the rush. Route vs Rush puts a clock on it.**
 
-[![35-second demo](media/route_vs_rush.gif)](media/route_vs_rush.mp4)
+[![35-second demo](media/route_vs_rush.gif)](https://youtu.be/sTCnilxqoAA)
 
-*Click the clip for the version with narration.*
+▶ **[Watch the demo with narration on YouTube](https://youtu.be/sTCnilxqoAA)**
 
 ```bash
 python run.py      # or ./run.sh (macOS/Linux), run.bat (Windows): installs, fetches the data, builds, opens http://localhost:8501
