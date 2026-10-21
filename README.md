@@ -1,6 +1,6 @@
-# Route vs Rush
+# nfl-beat-the-clock
 
-**Every dropback is a race: routes trying to get open, the rush trying to reach the quarterback. Route vs Rush puts a clock on that race, for every play.**
+**Every dropback is a race: routes trying to get open, the rush trying to reach the quarterback. This dashboard (Route vs Rush) puts a clock on that race, for every play.**
 
 ```bash
 python run.py      # or ./run.sh (macOS/Linux), run.bat (Windows): installs, fetches the data, builds, opens http://localhost:8501
