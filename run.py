@@ -31,14 +31,21 @@ def venv_python():
     return VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+def venv_ok(py):
+    return py.exists() and subprocess.run([py, "-m", "pip", "--version"], capture_output=True).returncode == 0
+
+
 def ensure_venv():
     py = venv_python()
-    if not py.exists():
-        say("creating .venv ...")
-        venv.EnvBuilder(with_pip=True, clear=VENV.exists()).create(VENV)
-    if subprocess.run([py, "-m", "pip", "--version"], capture_output=True).returncode != 0:
-        say("adding pip to .venv ...")
-        subprocess.run([py, "-m", "ensurepip", "--upgrade"], check=True, capture_output=True)
+    if venv_ok(py):
+        return py
+    say("recreating .venv (its Python or pip does not work) ..." if VENV.exists() else "creating .venv ...")
+    shutil.rmtree(VENV, ignore_errors=True)
+    # symlinks on macOS/Linux: a *copied* interpreter from uv/pyenv-style installs cannot find its stdlib
+    venv.EnvBuilder(with_pip=True, symlinks=os.name != "nt").create(VENV)
+    if not venv_ok(py):
+        sys.exit(f"[run] could not build a working .venv with {sys.executable}. "
+                 "Delete .venv and rerun with another interpreter, e.g. `python3.12 run.py`.")
     return py
 
 
