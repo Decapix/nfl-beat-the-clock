@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-from rvr import engine, io, metrics, plots as P, viz_html
+from rvr import defense, engine, io, metrics, plots as P, viz_html
 
 st.set_page_config(page_title="Route vs Rush", page_icon="⏱️", layout="wide")
 
@@ -55,6 +55,18 @@ def load_meta():
 @st.cache_data(max_entries=8)
 def load_game(gid):
     return io.load_game(gid)
+
+
+@st.cache_data
+def load_defense_meta():
+    """play-level defensive context + the full PFF rows (lined-up spots, hits/hurries/sacks)."""
+    plays = pd.read_csv(io.DATA / "plays.csv",
+                        usecols=["gameId", "playId", "pff_passCoverage", "pff_passCoverageType", "personnelD",
+                                 "defendersInBox", "personnelO", "offenseFormation", "pff_playAction", "dropBackType"])
+    pff_full = pd.read_csv(io.DATA / "pffScoutingData.csv",
+                           usecols=["gameId", "playId", "nflId", "pff_role", "pff_positionLinedUp",
+                                    "pff_hit", "pff_hurry", "pff_sack"])
+    return plays.set_index(["gameId", "playId"]), pff_full
 
 
 def run_play(gid, pid, target, open_sep, min_depth, pressure_dist):
@@ -159,6 +171,43 @@ with tab1:
         if S["open_man_ignored"]:
             sentence += f" Open alternative: {S['best_alt_name']} at {S['best_alt_sep_at_throw']:.1f} yd."
         st.markdown(f"**{sentence}**")
+
+        # ---- the other side of the race: what the defense ran, and who was on whom
+        try:
+            dplays, pff_full = load_defense_meta()
+            dp = dplays.loc[(gid, pid)]
+            pff_play = pff_full[(pff_full.gameId == gid) & (pff_full.playId == pid)]
+            rs = defense.rush_summary(pff_play, players)
+            cov_call = dp.pff_passCoverage if isinstance(dp.pff_passCoverage, str) else "unknown"
+            cov_type = dp.pff_passCoverageType if isinstance(dp.pff_passCoverageType, str) else ""
+            box = "" if pd.isna(dp.defendersInBox) else f" · {int(dp.defendersInBox)} in the box"
+            line = (f"**Defense ({row.defensiveTeam}): {cov_call}**" + (f" ({cov_type})" if cov_type else "")
+                    + (f" · personnel {dp.personnelD}" if isinstance(dp.personnelD, str) else "") + box
+                    + f" · {rs['n_rush']} rushers" + (f" ({', '.join(rs['spots'])})" if rs["spots"] else "")
+                    + f" vs {rs['n_cov']} in coverage"
+                    + (" · " + ", ".join(rs["credit"]) if rs["credit"] else ""))
+            st.markdown(line)
+            mu = defense.matchups(res, pff_play)
+            if not mu.empty:
+                with st.expander("Who was covering whom", expanded=True):
+                    st.dataframe(
+                        mu.drop(columns=["nflId"]), hide_index=True, width="stretch",
+                        column_config={
+                            "receiver": "Receiver", "rec_pos": "Pos",
+                            "defender": "Covered by (most of the route)", "def_pos": "Pos", "lined_up": "Lined up as",
+                            "share_nearest": st.column_config.ProgressColumn("Share of frames nearest",
+                                                                             format="percent", min_value=0, max_value=1),
+                            "defender_at_throw": "Nearest at the throw",
+                            "sep_at_throw": st.column_config.NumberColumn("Sep at throw", format="%.1f yd"),
+                            "open_at_throw": "Open", "targeted": "Target",
+                            "shared": "Same defender on 2+",
+                        })
+                    st.caption("Covering = the coverage defender who was nearest to the receiver most often from "
+                               "0.5 s after the snap to the throw. A proximity proxy, not the real assignment: "
+                               "in zone the nearest man changes as the route crosses zones, which is what the "
+                               "'share of frames' column shows.")
+        except Exception as e:
+            st.caption(f"Defensive details unavailable for this play ({type(e).__name__}).")
         try:
             _, players_, pff_ = load_meta()
             trk_ = load_game(gid)
