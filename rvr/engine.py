@@ -123,6 +123,8 @@ def analyze_play(trk_play, roles, target_nflId=None, open_sep=OPEN_SEP, min_dept
         tgt = int(hit[0]) if len(hit) else None
     if tgt is not None:
         others = np.arange(len(rid)) != tgt
+        if (others & open_throw).any():   # best alternative = most separated OPEN teammate, else most separated one
+            others = others & open_throw
         alt_sep = np.where(others, np.where(np.isfinite(sep_throw), sep_throw, -1), -1)
         a = int(np.argmax(alt_sep))
         best_alt_sep = float(alt_sep[a]) if others.any() and alt_sep[a] >= 0 else np.nan
