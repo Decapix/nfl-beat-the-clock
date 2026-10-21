@@ -6,6 +6,8 @@ Every dropback is a race between the routes trying to get open and the pass rush
 
 The Play Explorer is a linked viewer driven by one clock. You can press play, drag the slider, or click and drag on the timeline or distance chart, and the field, the open-window Gantt and the separation and pressure-distance curves all move together. Clicking any player (a chip, a Gantt row, a distance line or a dot on the field) highlights them everywhere and traces their path. After the throw, the ball's real tracking runs for 0.5 s; the dotted rest of the flight is a straight-line projection to the target, not tracking data.
 
+The Play Explorer also shows the other side of the race: the coverage call and type from PFF (Cover-3, Cover-1, Quarters, man or zone), the defensive personnel and box count, who rushed and from which spot, who was credited with the hit, hurry or sack, and a "who was covering whom" table. Covering is a proximity proxy, the coverage defender who was nearest to the receiver most often from 0.5 s after the snap to the throw, with the share of frames he was nearest; a low share or the same defender on two receivers is what zone looks like in the data. On the Gallup play above, Jamel Dean is nearest to Gallup on every frame, and the flag on the play is defensive holding on Dean.
+
 ## How to run
 
 ```bash
