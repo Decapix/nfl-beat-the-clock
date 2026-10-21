@@ -25,15 +25,10 @@ WIN_COLS = ["gameId", "playId", "nflId", "player", "pos", "team", "targeted", "t
             "max_sep"]
 
 
-def roles_for(pff_game, players):
-    r = pff_game.merge(players[["nflId", "displayName", "officialPosition"]], on="nflId", how="left")
-    return r.rename(columns={"displayName": "player", "officialPosition": "pos"})
-
-
 def process_game(args):
     gid, plays_g, pff_g, players = args
     trk = io.load_game(gid)
-    roles_all = roles_for(pff_g, players)
+    roles_all = io.roles_for(pff_g, players)
     team_of = trk.dropna(subset=["nflId"]).drop_duplicates("nflId").set_index("nflId").team
     rows, recs = [], []
     by_play = dict(tuple(trk.groupby("playId", sort=False)))

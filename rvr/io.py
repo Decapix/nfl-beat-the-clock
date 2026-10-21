@@ -52,6 +52,12 @@ def load_game(gameId):
     return flip(trk)
 
 
+def roles_for(pff_play, players):
+    """pff rows of one play/game -> nflId, pff_role, player, pos (+ gameId/playId)."""
+    r = pff_play.merge(players[["nflId", "displayName", "officialPosition"]], on="nflId", how="left")
+    return r.rename(columns={"displayName": "player", "officialPosition": "pos"})
+
+
 def parse_targets(plays, players, pff):
     """targetNflId per (gameId, playId): regex on playDescription, matched against that play's route runners.
     0 or >= 2 matches -> NaN."""
