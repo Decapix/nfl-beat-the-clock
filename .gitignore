@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 .streamlit/secrets.toml
 *.pyc
+.bdb_tmp/

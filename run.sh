@@ -1,25 +1,11 @@
 #!/usr/bin/env bash
-# one command: deps -> data -> build -> dashboard
+# macOS / Linux: one command -> deps, data, build, dashboard. The real work is in run.py.
 set -e
 cd "$(dirname "$0")"
-
-if [ ! -d .venv ]; then python3 -m venv .venv; fi
-# shellcheck disable=SC1091
-source .venv/bin/activate
-pip install -q -r requirements.txt
-
-if [ ! -f data/plays.csv ]; then
-  if [ -n "$RVR_DATA" ] && [ -f "$RVR_DATA/plays.csv" ]; then
-    ln -s "$RVR_DATA" data
-  else
-    echo "data/ not found, pulling the Big Data Bowl regional data (about 1 GB) ..."
-    git clone --depth 1 https://github.com/ThompsonJamesBliss/nfl-big-data-bowl-regional-event-data .bdb_tmp
-    mv .bdb_tmp/data data && rm -rf .bdb_tmp
+for c in python3.13 python3.12 python3.11 python3.10 python3 python; do
+  if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(sys.version_info < (3, 10))' 2>/dev/null; then
+    exec "$c" run.py "$@"
   fi
-fi
-
-if [ ! -f outputs/race_by_play.parquet ]; then
-  python build.py
-fi
-
-streamlit run app.py
+done
+echo "Python 3.10+ not found. Install it (macOS: brew install python, or python.org) and rerun." >&2
+exit 1

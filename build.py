@@ -49,7 +49,7 @@ def process_game(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--weeks", type=int, nargs="+", default=list(range(1, 9)))
-    ap.add_argument("--workers", type=int, default=os.cpu_count())
+    ap.add_argument("--workers", type=int, default=min(61, os.cpu_count() or 1))   # Windows caps at 61
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     t0 = time.time()
