@@ -240,6 +240,15 @@ function fieldShapes(){
 function openAt(p){ if (p.rec == null || k >= D.n_engine) return false;
   const r = recs.find(r => r.id === p.id); return r ? r.open[k] : false; }
 function sepAt(p){ const r = recs.find(r => r.id === p.id); return (r && k < D.n_engine) ? r.sep[k] : null; }
+// nearest opponent at the current frame (receivers: nearest coverage defender, like the separation metric)
+function nearest(p){
+  if (p.x[k] == null) return null;
+  let pool = D.players.filter(o => o.side !== p.side && o.x[k] != null);
+  if (p.rec != null) { const cov = pool.filter(o => o.role === "Coverage"); if (cov.length) pool = cov; }
+  let best = null;
+  pool.forEach(o => { const d = Math.hypot(o.x[k] - p.x[k], o.y[k] - p.y[k]); if (!best || d < best.d) best = {p:o, d}; });
+  return best;
+}
 function fieldTraces(){
   const off = D.players.filter(p => p.side === "off"), def = D.players.filter(p => p.side === "def");
   const hov = p => `${p.name} #${p.jersey} (${p.pos})` + (p.rec!=null && k < D.n_engine ? `<br>separation ${fmt(sepAt(p))} yd` : "");
@@ -265,7 +274,17 @@ function fieldTraces(){
     const p = byId[sel];
     tr.push({type:"scatter", mode:"lines", x:p.x.slice(0, k+1), y:p.y.slice(0, k+1), hoverinfo:"skip",
       line:{color:C.hi, width:2}, opacity:0.8});
-    tr.push({type:"scatter", mode:"markers+text", x:[p.x[k]], y:[p.y[k]], text:[last(p.name)], textposition:"top center",
+    const near = nearest(p);
+    if (near) {
+      const q = near.p;
+      tr.push({type:"scatter", mode:"lines", x:[p.x[k], q.x[k]], y:[p.y[k], q.y[k]], hoverinfo:"skip",
+        line:{color:C.hi, width:1, dash:"dash"}, opacity:0.7});
+      tr.push({type:"scatter", mode:"text", x:[(p.x[k]+q.x[k])/2], y:[(p.y[k]+q.y[k])/2], text:[near.d.toFixed(1)+" yd"],
+        textposition:"middle right", textfont:{color:C.hi, size:11}, hoverinfo:"skip"});
+    }
+    const dep = p.x[k] != null ? p.x[k] - D.los : null;
+    tr.push({type:"scatter", mode:"markers+text", x:[p.x[k]], y:[p.y[k]],
+      text:[last(p.name) + (dep != null ? ` · ${dep >= 0 ? "+" : ""}${dep.toFixed(0)} yd` : "")], textposition:"top center",
       textfont:{color:C.hi, size:12}, hoverinfo:"skip", marker:{size:26, color:"rgba(0,0,0,0)", line:{color:C.hi, width:3}}});
   }
   return tr;
@@ -304,6 +323,10 @@ function info(){
   if (sel === null || !byId[sel]) { el.innerHTML = "Click a player (chip, timeline row, distance line or dot on the field) to follow him."; return; }
   const p = byId[sel], t = D.t[k];
   let s = `<b>${p.name}</b> #${p.jersey} · ${p.pos} · ${p.side === "off" ? "offense" : "defense"} · t = ${t.toFixed(1)} s`;
+  if (p.x[k] != null) { const dep = p.x[k] - D.los;
+    s += ` · <b>${Math.abs(dep).toFixed(1)} yd</b> ${dep >= 0 ? "past" : "behind"} the LOS`; }
+  const nr = nearest(p);
+  if (nr && !(p.rec != null && k < D.n_engine)) s += ` · nearest opponent ${last(nr.p.name)} <b>${nr.d.toFixed(1)} yd</b>`;
   if (p.rec != null && k < D.n_engine) {
     const r = recs.find(r => r.id === p.id), o = r.open[k];
     const st = o ? "OPEN" : (r.sep[k] != null && r.sep[k] >= D.open_sep ? "not past the LOS yet" : "covered");
