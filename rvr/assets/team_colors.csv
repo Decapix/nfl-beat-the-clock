@@ -1,0 +1,33 @@
+abbr,name,nick,conf,div,color1,color2,color3,color4
+ARI,Arizona Cardinals,Cardinals,NFC,NFC West,#97233F,#000000,#FFB612,#A5ACAF
+ATL,Atlanta Falcons,Falcons,NFC,NFC South,#A71930,#000000,#A5ACAF,#A30D2D
+BAL,Baltimore Ravens,Ravens,AFC,AFC North,#241773,#9E7C0C,#9E7C0C,#C60C30
+BUF,Buffalo Bills,Bills,AFC,AFC East,#00338D,#C60C30,#0C2E82,#D50A0A
+CAR,Carolina Panthers,Panthers,NFC,NFC South,#0085CA,#000000,#BFC0BF,#0085CA
+CHI,Chicago Bears,Bears,NFC,NFC North,#0B162A,#E64100,#0B162A,#E64100
+CIN,Cincinnati Bengals,Bengals,AFC,AFC North,#FB4F14,#000000,#000000,#D32F1E
+CLE,Cleveland Browns,Browns,AFC,AFC North,#FF3C00,#311D00,#A5ACAF,#D32F1E
+DAL,Dallas Cowboys,Cowboys,NFC,NFC East,#002244,#B0B7BC,#ACC0C6,#A5ACAF
+DEN,Denver Broncos,Broncos,AFC,AFC West,#002244,#FB4F14,#00234C,#FF5200
+DET,Detroit Lions,Lions,NFC,NFC North,#0076B6,#B0B7BC,#000000,#004E89
+GB,Green Bay Packers,Packers,NFC,NFC North,#203731,#FFB612,#1C2D25,#EEAD1E
+HOU,Houston Texans,Texans,AFC,AFC South,#03202F,#A71930,#00071C,#A30D2D
+IND,Indianapolis Colts,Colts,AFC,AFC South,#002C5F,#A5ACAF,#013369,#9BA1A2
+JAX,Jacksonville Jaguars,Jaguars,AFC,AFC South,#006778,#000000,#9F792C,#D7A22A
+KC,Kansas City Chiefs,Chiefs,AFC,AFC West,#E31837,#FFB81C,#000000,#E31837
+LA,Los Angeles Rams,Rams,NFC,NFC West,#003594,#FFD100,#001532,#AF925D
+LAC,Los Angeles Chargers,Chargers,AFC,AFC West,#007BC7,#FFC20E,#FFB612,#001532
+LV,Las Vegas Raiders,Raiders,AFC,AFC West,#000000,#A5ACAF,#A6AEB0,#000000
+MIA,Miami Dolphins,Dolphins,AFC,AFC East,#008E97,#FC4C02,#005778,#008E97
+MIN,Minnesota Vikings,Vikings,NFC,NFC North,#4F2683,#FFC62F,#E9BF9B,#000000
+NE,New England Patriots,Patriots,AFC,AFC East,#002244,#C60C30,#B0B7BC,#001532
+NO,New Orleans Saints,Saints,NFC,NFC South,#D3BC8D,#000000,#9F8958,#000000
+NYG,New York Giants,Giants,NFC,NFC East,#0B2265,#A71930,#A5ACAF,#012352
+NYJ,New York Jets,Jets,AFC,AFC East,#003F2D,#000000,,
+PHI,Philadelphia Eagles,Eagles,NFC,NFC East,#004C54,#A5ACAF,#ACC0C6,#000000
+PIT,Pittsburgh Steelers,Steelers,AFC,AFC North,#000000,#FFB612,#C60C30,#00539B
+SEA,Seattle Seahawks,Seahawks,NFC,NFC West,#002244,#69BE28,#A5ACAF,#001532
+SF,San Francisco 49ers,49ers,NFC,NFC West,#AA0000,#B3995D,#000000,#A5ACAF
+TB,Tampa Bay Buccaneers,Buccaneers,NFC,NFC South,#A71930,#322F2B,#000000,#FF7900
+TEN,Tennessee Titans,Titans,AFC,AFC South,#4495D2,#D50A0A,,
+WAS,Washington Commanders,Commanders,NFC,NFC East,#5A1414,#FFB612,#000000,#5B2B2F

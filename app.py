@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-from rvr import defense, engine, io, metrics, plots as P, viz_html
+from rvr import defense, engine, io, metrics, plots as P, teams, viz_html
 
 st.set_page_config(page_title="Route vs Rush", page_icon="⏱️", layout="wide")
 
@@ -36,6 +36,28 @@ LIMITS = """
 
 def fmt_s(v, none="—"):
     return none if v is None or (isinstance(v, float) and np.isnan(v)) else f"{v:.1f} s"
+
+
+def matchup_banner(off, deff, label=""):
+    """Offense vs defense in club colors + logos; the dots are the exact colors used on the field."""
+    oc, dc = teams.pair(off, deff, P.TURF)
+
+    def side(abbr, col, role, right=False):
+        t = teams.team(abbr)
+        img = (f'<img src="{teams.logo(abbr)}" style="height:40px;width:40px;object-fit:contain">'
+               if teams.logo(abbr) else "")
+        dot = f'<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:{col};margin:0 5px 0 0;vertical-align:middle"></span>'
+        txt = (f'<span style="text-align:{"right" if right else "left"}">'
+               f'<span style="font-size:18px;font-weight:700;color:{P.TEXT}">{t["name"]}</span><br>'
+               f'<span style="font-size:11px;color:{P.MUTED}">{dot}{abbr} · {role}</span></span>')
+        return f'<span style="display:inline-flex;align-items:center;gap:10px">{(txt + img) if right else (img + txt)}</span>'
+
+    return (f'<div style="display:flex;justify-content:space-between;align-items:center;gap:16px;'
+            f'padding:10px 14px 9px;border-radius:10px;background:{P.PANEL};'
+            f'border-top:3px solid transparent;border-image:linear-gradient(90deg,{oc} 0 50%,{dc} 50% 100%) 1">'
+            f'{side(off, oc, "offense → right")}'
+            f'<span style="font-size:12px;color:{P.MUTED};text-align:center">{label}</span>'
+            f'{side(deff, dc, "defense", right=True)}</div>')
 
 
 # ---------------------------------------------------------------- data
@@ -89,7 +111,10 @@ desc = race.set_index(["gameId", "playId"]).playDescription.to_dict()
 
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
-    st.title("Route vs Rush")
+    st.markdown('<div style="display:flex;align-items:center;gap:12px;margin:4px 0 2px">'
+                '<img src="app/static/nfl.png" style="height:46px">'
+                '<span style="font-size:28px;font-weight:700;line-height:1">Route vs Rush</span></div>',
+                unsafe_allow_html=True)
     st.markdown("*the open-window clock*")
     st.caption(f"{len(race):,} dropbacks · 2021 weeks 1–8 · NGS tracking + PFF roles")
     open_sep = st.slider("Open if separation ≥ (yd)", 1.5, 5.0, engine.OPEN_SEP, 0.5)
@@ -141,6 +166,8 @@ with tab1:
                        format_func=lambda p: (lambda d: d if len(d) <= 80 else d[:79] + "…")(desc.get((gid, p), str(p))))
 
     row = race[(race.gameId == gid) & (race.playId == pid)].iloc[0]
+    st.markdown(matchup_banner(row.possessionTeam, row.defensiveTeam, f"week {int(row.week)} · {glabel.get(gid, gid)}"),
+                unsafe_allow_html=True)
     try:
         res = run_play(gid, pid, row.targetNflId, open_sep, min_depth, pressure_dist)
     except Exception as e:
@@ -215,8 +242,9 @@ with tab1:
                                   players_)[["nflId", "pff_role", "player", "pos"]]
             data = viz_html.payload(res, trk_[trk_.playId == pid], roles_, open_sep, pressure_dist)
             st.iframe(viz_html.render(data), height=150 + 34 * (len(res.rec_ids) + 1) + 110 + 340)
-            st.caption(f"{row.possessionTeam} (blue) → right vs {row.defensiveTeam} (red), "
-                       f"{row.coverage if isinstance(row.coverage, str) else 'unknown coverage'}. "
+            st.caption(f"{row.possessionTeam} → right vs {row.defensiveTeam}, both in club colors as in the banner; "
+                       f"the big dot is the target. "
+                       f"{row.coverage if isinstance(row.coverage, str) else 'Unknown coverage'}. "
                        "One clock drives every chart: press play, drag the slider, or click/drag on the timeline "
                        "or distance chart (← → keys step one frame). Click any player to highlight him everywhere. "
                        "Ball positions after release are tracked for 0.5 s; the dotted rest of the flight is a "
@@ -238,7 +266,8 @@ with tab2:
     f1, f2, f3 = st.columns([2, 2, 2])
     pos_sel = f1.multiselect("Position", ["WR", "TE", "RB"], default=["WR", "TE", "RB"])
     min_routes = f2.slider("Min routes", 10, 300, 40, 10)
-    team = f3.selectbox("Team", ["All"] + sorted(rt.team.dropna().unique()))
+    team = f3.selectbox("Team", ["All"] + sorted(rt.team.dropna().unique()),
+                        format_func=lambda a: a if a == "All" else f"{a} · {teams.team(a)['nick']}")
     v = rt[rt.pos.isin(pos_sel) & (rt.routes >= min_routes)]
     if team != "All":
         v = v[v.team == team]
@@ -246,10 +275,13 @@ with tab2:
         st.info("No receiver matches these filters.")
     else:
         v = v.sort_values(["median_t_open", "open_share"], ascending=[True, False])
+        vt = v.drop(columns=["nflId"])
+        vt.insert(list(vt.columns).index("team"), "logo", vt.team.map(teams.logo))
         st.dataframe(
-            v.drop(columns=["nflId"]), hide_index=True, width="stretch", height=360,
+            vt, hide_index=True, width="stretch", height=360,
             column_config={
-                "player": "Player", "pos": "Pos", "team": "Team", "routes": "Routes", "targets": "Targets",
+                "player": "Player", "pos": "Pos", "logo": st.column_config.ImageColumn("", width=36),
+                "team": "Team", "routes": "Routes", "targets": "Targets",
                 "median_t_open": st.column_config.NumberColumn("Median time to open", format="%.1f s"),
                 "open_share": st.column_config.ProgressColumn("Open share of dropback", format="percent",
                                                               min_value=0, max_value=1),
@@ -310,9 +342,11 @@ with tab2:
 # ---------------------------------------------------------------- tab 3
 with tab3:
     qb = metrics.qb_leaderboard(race)
-    st.dataframe(qb.drop(columns=["qbNflId"]), hide_index=True, width="stretch", height=380,
+    qt = qb.drop(columns=["qbNflId"])
+    qt.insert(list(qt.columns).index("team"), "logo", qt.team.map(teams.logo))
+    st.dataframe(qt, hide_index=True, width="stretch", height=380,
                  column_config={
-                     "qb": "QB", "team": "Team", "dropbacks": "Dropbacks",
+                     "qb": "QB", "logo": st.column_config.ImageColumn("", width=36), "team": "Team", "dropbacks": "Dropbacks",
                      "mean_t_throw": st.column_config.NumberColumn("Mean time to throw", format="%.2f s"),
                      "pct_into_open_window": st.column_config.ProgressColumn("Throws into open window", format="percent",
                                                                              min_value=0, max_value=1),
@@ -323,8 +357,9 @@ with tab3:
     fig = px.scatter(qb, x="pct_into_open_window", y="mean_t_throw", size="dropbacks", text="qb",
                      hover_name="qb", labels={"pct_into_open_window": "throws into an open window",
                                               "mean_t_throw": "mean time to throw (s)"})
-    fig.update_traces(marker=dict(color=P.TARGET, opacity=0.7), textposition="top center",
-                      textfont=dict(size=10, color=P.TEXT))
+    fig.update_traces(marker=dict(color=[teams.pick(a, P.BG) for a in qb.team], opacity=0.85,
+                                  line=dict(color=[teams.secondary(a) for a in qb.team], width=1.5)),
+                      textposition="top center", textfont=dict(size=10, color=P.TEXT))
     P.base_layout(fig, height=480)
     fig.update_xaxes(tickformat=".0%")
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})

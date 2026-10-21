@@ -8,3 +8,4 @@ font = "sans serif"
 
 [server]
 headless = true
+enableStaticServing = true   # static/ -> app/static/ (club logos, NFL shield)

@@ -10,4 +10,5 @@ Every dropback is a race: routes trying to get open, the rush trying to reach th
 
 **Tabs:** Play Explorer (field, open-window timeline, separation and pressure curves, defense call and matchups) · Receivers · Quarterbacks · Coverages · Method.
 **Code:** `rvr/engine.py` race engine, `build.py` batch over all weeks into `outputs/`, `app.py` dashboard.
+**Look:** `rvr/teams.py` official club colors + logos (nflverse / the community *NFL Colors* Figma board), picked per play so both sides stay visible and apart on the field; logos in `static/`.
 **Limits:** nearest defender, not the assigned one; tracking ends at the throw; targets parsed from play text (95 % matched); eight weeks.

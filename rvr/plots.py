@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from . import teams
 from .engine import FPS, PRESSURE_DIST, _runs
 
 OPEN = "#2ECC71"
@@ -90,6 +91,9 @@ def field_animation(res, open_mask=None, pressure_dist=PRESSURE_DIST):
     frames = np.sort(f.frameId.unique())
     snap = frames[0]
     off_team = f.loc[f.nflId == res.qb_id, "team"].iloc[0]
+    def_team = f.loc[(f.team != off_team) & (f.team != "football"), "team"].iloc[0]
+    off_col, def_col = teams.pair(off_team, def_team, TURF)   # club colors, kept apart and visible on the turf
+    tgt_id = res.rec_ids[res.target_idx] if res.target_idx is not None else None
     rec_idx = {nid: j for j, nid in enumerate(res.rec_ids)}
     x0 = max(0, res.los_x - 15)
     x1 = min(120, res.los_x + 45)
@@ -100,8 +104,9 @@ def field_animation(res, open_mask=None, pressure_dist=PRESSURE_DIST):
         ball = d[d.nflId.isna()]
         off = d[(d.team == off_team) & d.nflId.notna()]
         dfn = d[(d.team != off_team) & d.nflId.notna() & (d.team != "football")]
-        line = [OPEN if (n in rec_idx and open_mask[k, rec_idx[n]]) else OFFENSE for n in off.nflId]
+        line = [OPEN if (n in rec_idx and open_mask[k, rec_idx[n]]) else off_col for n in off.nflId]
         lw = [3 if n in rec_idx and open_mask[k, rec_idx[n]] else 0 for n in off.nflId]
+        size = [15 if n == tgt_id else 11 for n in off.nflId]   # the target is the big dot
         qb = d[d.nflId == res.qb_id]
         hot = res.pressure_dist[k] <= pressure_dist
 
@@ -117,10 +122,10 @@ def field_animation(res, open_mask=None, pressure_dist=PRESSURE_DIST):
                     extra.append("")
             return [a + b for a, b in zip(base, extra)]
         return [
-            go.Scatter(x=dfn.x, y=dfn.y, mode="markers", marker=dict(size=11, color=DEFENSE), hovertext=hov(dfn),
-                       hoverinfo="text", name="defense"),
-            go.Scatter(x=off.x, y=off.y, mode="markers", marker=dict(size=11, color=OFFENSE, line=dict(color=line, width=lw)),
-                       hovertext=hov(off), hoverinfo="text", name="offense"),
+            go.Scatter(x=dfn.x, y=dfn.y, mode="markers", marker=dict(size=11, color=def_col), hovertext=hov(dfn),
+                       hoverinfo="text", name=str(def_team)),
+            go.Scatter(x=off.x, y=off.y, mode="markers", marker=dict(size=size, color=off_col, line=dict(color=line, width=lw)),
+                       hovertext=hov(off), hoverinfo="text", name=str(off_team)),
             go.Scatter(x=qb.x, y=qb.y, mode="markers", marker=dict(size=22, color="rgba(0,0,0,0)",
                        line=dict(color=PRESSURE if hot else THROW, width=2.5)), hoverinfo="skip", name="QB"),
             go.Scatter(x=ball.x, y=ball.y, mode="markers", marker=dict(size=8, color=BALL, symbol="diamond"),

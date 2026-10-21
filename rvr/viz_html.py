@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from . import plots as P
+from . import teams
 from .engine import FPS
 
 MAX_FLIGHT = 3.0      # s: cap on the projected ball flight
@@ -55,6 +56,9 @@ def payload(res, trk_play, roles, open_sep, pressure_dist, project=True):
 
     info = people.drop_duplicates("nflId").set_index("nflId")
     off_team = info.team.get(res.qb_id)
+    others = info.team[(info.team != off_team) & (info.team != "football")]
+    def_team = others.iloc[0] if len(others) else ""
+    off_col, def_col = teams.pair(off_team, def_team, P.TURF)
     t = list((frames - snap) / FPS)
     n_real = len(frames)
     tgt_id = res.rec_ids[res.target_idx] if res.target_idx is not None else None
@@ -72,7 +76,7 @@ def payload(res, trk_play, roles, open_sep, pressure_dist, project=True):
         j = rec_col.get(nid)
         players.append(dict(
             id=int(nid), name=str(info.player.get(nid, "")), pos=str(info.pos.get(nid, "")),
-            jersey=int(info.jerseyNumber.get(nid, 0) or 0), side=side, role=role,
+            jersey=int(info.jerseyNumber.get(nid, 0) or 0), side=side, role=role, team=str(info.team.get(nid, "")),
             x=_r(X[:, i]), y=_r(Y[:, i]),
             rec=j, qb=bool(nid == res.qb_id), target=bool(nid == tgt_id),
         ))
@@ -90,8 +94,9 @@ def payload(res, trk_play, roles, open_sep, pressure_dist, project=True):
         pdist=_r(np.where(np.isfinite(res.pressure_dist), np.minimum(res.pressure_dist, 15), np.nan)),
         open_sep=open_sep, pressure_dist=pressure_dist, qb_id=int(res.qb_id),
         target_id=int(tgt_id) if tgt_id is not None else None,
+        off_team=str(off_team), def_team=str(def_team),
         colors=dict(open=P.OPEN, covered=P.COVERED, target=P.TARGET, pressure=P.PRESSURE, throw=P.THROW,
-                    off=P.OFFENSE, deff=P.DEFENSE, ball=P.BALL, turf=P.TURF, bg=P.BG, panel=P.PANEL,
+                    off=off_col, deff=def_col, ball=P.BALL, turf=P.TURF, bg=P.BG, panel=P.PANEL,
                     text=P.TEXT, muted=P.MUTED, hi="#F5C542"),
     )
 
@@ -257,7 +262,7 @@ function fieldTraces(){
     {x:def.map(p=>p.x[k]), y:def.map(p=>p.y[k]), customdata:def.map(p=>p.id), text:def.map(hov),
      marker:{size:12, color:C.deff, opacity:def.map(dim)}},
     {x:off.map(p=>p.x[k]), y:off.map(p=>p.y[k]), customdata:off.map(p=>p.id), text:off.map(hov),
-     marker:{size:12, color:off.map(p=>p.target ? C.target : C.off), opacity:off.map(dim),
+     marker:{size:off.map(p=>p.target ? 16 : 12), color:C.off, opacity:off.map(dim),
        line:{color:off.map(p=>openAt(p) ? C.open : "rgba(0,0,0,0)"), width:3}}},
   ].map(t => Object.assign({type:"scatter", mode:"markers", hoverinfo:"text"}, t));
   const q = byId[D.qb_id], hot = k < D.n_engine && D.pdist[k] != null && D.pdist[k] <= D.pressure_dist;
@@ -322,7 +327,7 @@ function info(){
   const el = document.getElementById("info");
   if (sel === null || !byId[sel]) { el.innerHTML = "Click a player (chip, timeline row, distance line or dot on the field) to follow him."; return; }
   const p = byId[sel], t = D.t[k];
-  let s = `<b>${p.name}</b> #${p.jersey} · ${p.pos} · ${p.side === "off" ? "offense" : "defense"} · t = ${t.toFixed(1)} s`;
+  let s = `<b>${p.name}</b> #${p.jersey} · ${p.pos} · <span style="color:${p.side === "off" ? C.off : C.deff}">${p.team}</span> ${p.side === "off" ? "offense" : "defense"} · t = ${t.toFixed(1)} s`;
   if (p.x[k] != null) { const dep = p.x[k] - D.los;
     s += ` · <b>${Math.abs(dep).toFixed(1)} yd</b> ${dep >= 0 ? "past" : "behind"} the LOS`; }
   const nr = nearest(p);
@@ -379,8 +384,10 @@ drawAll();
 window.addEventListener("resize", () => Plotly.react(F, fieldTraces(), fieldLayout(), cfg));
 scrubber(G); scrubber(Dd);
 G.on("plotly_click", pick); Dd.on("plotly_click", pick); F.on("plotly_click", pick);
-document.getElementById("fieldhint").textContent =
-  "Offense (blue) → right, defense red, ball gold. Green outline = open receiver; QB ring turns red under pressure; " +
+const dot = c => `<span style="color:${c};font-size:14px">●</span>`;
+document.getElementById("fieldhint").innerHTML =
+  `${dot(C.off)} ${D.off_team} → right vs ${dot(C.deff)} ${D.def_team} in club colors; the big dot is the target, ball gold. ` +
+  "Green outline = open receiver; QB ring turns red under pressure; " +
   (D.n_real < N ? "dotted gold = projected ball flight to the target after tracking ends." : "gold line = ball after release.");
 if (D.target_id != null) select(D.target_id);
 </script></body></html>"""
