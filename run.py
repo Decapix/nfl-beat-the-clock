@@ -106,7 +106,7 @@ def main():
     if not (ROOT / "outputs" / "race_by_play.parquet").exists():
         say("building outputs (all 8 weeks, ~1 min) ...")
         subprocess.run([py, "build.py"], check=True, env=env)
-    say("starting the dashboard: open http://localhost:8501 (Ctrl+C to stop)")
+    say("starting the dashboard: open the Local URL printed below (Ctrl+C to stop)")
     try:
         subprocess.run([py, "-m", "streamlit", "run", "app.py", *sys.argv[1:]], env=env)
     except KeyboardInterrupt:
