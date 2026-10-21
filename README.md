@@ -4,6 +4,8 @@ Every dropback is a race between the routes trying to get open and the pass rush
 
 ![Play Explorer](figures/1_play_explorer.png)
 
+The Play Explorer is a linked viewer driven by one clock. You can press play, drag the slider, or click and drag on the timeline or distance chart, and the field, the open-window Gantt and the separation and pressure-distance curves all move together. Clicking any player (a chip, a Gantt row, a distance line or a dot on the field) highlights them everywhere and traces their path. After the throw, the ball's real tracking runs for 0.5 s; the dotted rest of the flight is a straight-line projection to the target, not tracking data.
+
 ## How to run
 
 ```bash

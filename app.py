@@ -5,7 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from rvr import engine, io, metrics, plots as P
+
+from rvr import engine, io, metrics, plots as P, viz_html
 
 st.set_page_config(page_title="Route vs Rush", page_icon="⏱️", layout="wide")
 
@@ -158,23 +159,21 @@ with tab1:
         if S["open_man_ignored"]:
             sentence += f" Open alternative: {S['best_alt_name']} at {S['best_alt_sep_at_throw']:.1f} yd."
         st.markdown(f"**{sentence}**")
-        left, right = st.columns([3, 2])
-        with left:
-            st.plotly_chart(P.gantt(res, row.playDescription[:110], pressure_dist), width="stretch",
-                            config={"displayModeBar": False})
-            st.caption("Green = receiver open (blue = the target), grey = covered or not past the LOS, "
-                       "red = a rusher within range of the QB, dashed = throw/sack.")
-        with right:
-            try:
-                st.plotly_chart(P.field_animation(res, pressure_dist=pressure_dist), width="stretch",
-                                config={"displayModeBar": False})
-                st.caption(f"{row.possessionTeam} (blue) → right vs {row.defensiveTeam} (red), "
-                           f"{row.coverage if isinstance(row.coverage, str) else 'unknown coverage'}. "
-                           "Green outline = open receiver, QB ring turns red under pressure, dotted line = LOS.")
-            except Exception as e:
-                st.info(f"Field animation unavailable for this play ({type(e).__name__}).")
-        st.plotly_chart(P.distance_curves(res, open_sep, pressure_dist), width="stretch",
-                        config={"displayModeBar": False})
+        try:
+            _, players_, pff_ = load_meta()
+            trk_ = load_game(gid)
+            roles_ = io.roles_for(pff_[(pff_.gameId == gid) & (pff_.playId == pid)],
+                                  players_)[["nflId", "pff_role", "player", "pos"]]
+            data = viz_html.payload(res, trk_[trk_.playId == pid], roles_, open_sep, pressure_dist)
+            st.iframe(viz_html.render(data), height=150 + 34 * (len(res.rec_ids) + 1) + 110 + 340)
+            st.caption(f"{row.possessionTeam} (blue) → right vs {row.defensiveTeam} (red), "
+                       f"{row.coverage if isinstance(row.coverage, str) else 'unknown coverage'}. "
+                       "One clock drives every chart: press play, drag the slider, or click/drag on the timeline "
+                       "or distance chart (← → keys step one frame). Click any player to highlight him everywhere. "
+                       "Ball positions after release are tracked for 0.5 s; the dotted rest of the flight is a "
+                       "straight-line projection to the target, not tracking data.")
+        except Exception as e:
+            st.info(f"Interactive viewer unavailable for this play ({type(e).__name__}).")
         j = res.target_idx if res.target_idx is not None else int(np.nanargmax(np.where(np.isfinite(res.sep[-1]), res.sep[-1], -1)))
         who = res.rec_names[j].split()[-1]
         pd_min = res.pressure_dist[np.isfinite(res.pressure_dist)]
